@@ -1,13 +1,5 @@
 #include "AModeUSConnection.h"
 
-/**
- * @brief Default constructor to built the AModeUSConnection. 
- * I recommend to use this constructors, as everything is configured the way the ultrasound machine is.
- * 
- * @param ip        IP address of the A-mode ultrasound machine.
- * @param port      Port of the A-mode ultrasound machine.
- * @param mode      Streaming mode, you can either choose DATA_RAW or DATA_DEPTH, depending of your scenario.
- */
 AModeUSConnection::AModeUSConnection(std::string ip, std::string port, int mode) {
     ip_ = ip;
     port_ = port;
@@ -37,18 +29,6 @@ AModeUSConnection::AModeUSConnection(std::string ip, std::string port, int mode)
 }
 
 
-/**
- * @brief Second option for constructors, you can put your own sample number and probes. 
- * Be careful if you want to use this contructors for initialization of the class, 
- * you need to know the configuration from the ultrasound machine side, or else, 
- * the data your retrieve will be very weird. This class doesn't include straming
- * mode because you are in control on how the data will be structured.
- * 
- * @param ip        IP address of the A-mode ultrasound machine.
- * @param port      Port of the A-mode ultrasound machine.
- * @param samples   The number of point samples from the signals.
- * @param probes    The number of probes/transducers being used.
- */
 AModeUSConnection::AModeUSConnection(std::string ip, std::string port, int samples, int probes) {
     ip_ = ip;
     port_ = port;
@@ -62,14 +42,6 @@ AModeUSConnection::AModeUSConnection(std::string ip, std::string port, int sampl
 }
 
 
-/**
- * @brief Initialization of TCP Socket connection.
- * To understand more about this please follow the official tutorial from microsoft,
- * which can be found in. https://docs.microsoft.com/en-us/windows/win32/winsock/getting-started-with-winsock
- * 
- * @param ConnectSocket     Pointer to socket object, which will be used in the entire code for data streaming.
- * @return                  A flag indicating the status. 0 if connection is successfully made, -1 if there is something wrong.
- */
 int AModeUSConnection::connectTCP(SOCKET* ConnectSocket) {
     // variable to store the status flag
     int iResult;
@@ -131,48 +103,27 @@ int AModeUSConnection::connectTCP(SOCKET* ConnectSocket) {
 }
 
 
-/**
- * @brief A function to check if the PC and A-mode ultrasound is already connected through TCP.
- * 
- * @return              A flag indicating the status.
- */
+
 bool AModeUSConnection::isConnected() {
     if (ConnectSocket_ != INVALID_SOCKET) return true;
     else return false;
 }
 
 
-/**
- * @brief A function to set the program to record the streamed A-mode signal.
- * 
- * @param flag          Set true to record.
- */
+
 void AModeUSConnection::setRecord(bool flag) {
 
     setrecord_ = flag;
 }
 
 
-/**
- * @brief A function to set the program to name the streamed A-mode signal with index.
- * The data that is sent by A-mode Ultrasound Machine contains index, starting from 0 to 1.
- * This index is used for tracking if there any data loss, you can notice it if there is a
- * gap between the index. This is usefull for debugging the code.
- * 
- * @param flag          Set true to use undex.
- */
+
 void AModeUSConnection::useDataIndex(bool flag) {
 
     usedataindex_ = flag;
 }
 
 
-/**
- * @brief A function to specify the where the streamed data will be stored.
- * 
- * @param directory     Path to the directory.
- * @return              A flag indicating the status. -1 if there is something wrong.
- */
 int AModeUSConnection::setDirectory(std::string directory) {
     // check if the directory is exists
     if (!boost::filesystem::exists(directory)) {
@@ -199,15 +150,7 @@ int AModeUSConnection::setDirectory(std::string directory) {
     return 0;
 }
 
-/**
- * @brief An alternative function to specify where the streamed data will be stored with custom file name.
- * This is used when you specify DATA_DEPTH for streaming mode, so that you can specify your own .csv file name.
- * However, you can't use this for DATA_RAW, since the naming is predetermined using timestamp and index.
- * 
- * @param directory Path to directory.
- * @param filename Filename.
- * @return A flag indicating the status. -1 if there is something wrong.
- */
+
 int AModeUSConnection::setDirectory(std::string directory, std::string filename) {
 
     // check if the directory is exists
@@ -227,13 +170,8 @@ int AModeUSConnection::setDirectory(std::string directory, std::string filename)
     return 0;
 }
 
-
-/**
- * @brief An experimental function for receiving data.
- * Please dont use this and just don't care. This is just testing code, but i am too affraid to delete it.
- * 
- * @return A flag indicating the status. -1 if there is something wrong.
- */
+// An experimental function for receiving data. Please dont use this and just don't care. 
+// This is just testing code, but i am too affraid to delete it.
 int AModeUSConnection::receiveData() {
     int iResult;
 
@@ -321,24 +259,9 @@ int AModeUSConnection::receiveData() {
 }
 
 
-/**
- * @brief A function to receive the data for DATA_RAW mode.
- * Each data packet is a long array of unit16_t, with the number (samples_ * probes_).
- * Raw data will be converted into uint16_t then stored to .TIFF file. OpenCV is used in
- * this process since they are very effective in storing big image.
- * 
- * @param ultrasound_frd    A pointer to array of unit16_t where the A-mode Ultrasound raw signal is stored.
- * @param receivebuffer     A temporary buffer that we will use for store binary string from socket. 
- *                          The A-mode ultrasound machine always send full data (header+index+data)
- *                          so we need to accomodate the full data.
- * @param receivebuffersize The byte size of recievebuffer (all, header+index+data).
- * @param datasize          The byte size of data (only data without header and index).
- * @param headerindexsize   This will be used to skip or not to skip the bytes that represent the 
- *                          index so if the user specified useDataIndex(true), it means we do not skip the index 
- *                          byte thus the headerindexsize is only the size of headersize_
- * @return                  A flag indicating the status. >0 means there is data, 0 means the connection is closed, -1 means there is something wrong.
- */
+// A function to receive the data for DATA_RAW mode.
 int AModeUSConnection::receiveData(std::vector<uint16_t>* ultrasound_frd, char* receivebuffer, int receivebuffersize, int datasize, int headerindexsize) {
+    
     // read data from socket, put it in temporary variable
     int iResult = recv(ConnectSocket_, receivebuffer, receivebuffersize, 0);
 
@@ -428,21 +351,8 @@ int AModeUSConnection::receiveData(std::vector<uint16_t>* ultrasound_frd, char* 
     return iResult;
 }
 
-/**
- * @brief A function to receive the data for DATA_DEPTH mode.
- * Each data packet is a long array of double, with the number of probes_. Depth data will be stored in .csv file.
- * 
- * @param ultrasound_frd    A pointer to array of unit16_t where the A-mode Ultrasound raw signal is stored.
- * @param receivebuffer     A temporary buffer that we will use for store binary string from socket.
- *                          The A-mode ultrasound machine always send full data (header+index+data)
- *                          so we need to accomodate the full data.
- * @param receivebuffersize The byte size of recievebuffer (all, header+index+data).
- * @param datasize          The byte size of data (only data without header and index).
- * @param headerindexsize   This will be used to skip or not to skip the bytes that represent the
- *                          index so if the user specified useDataIndex(true), it means we do not skip the index
- *                          byte thus the headerindexsize is only the size of headersize_
- * @return                  A flag indicating the status. >0 means there is data, 0 means the connection is closed, -1 means there is something wrong.
- */
+
+// A function to receive the data for DATA_DEPTH mode.
 int AModeUSConnection::receiveData(std::vector<double>* ultrasound_frd, char* receivebuffer, int receivebuffersize, int datasize, int headerindexsize) {
     // read data from socket, put it in temporary variable
     int iResult = recv(ConnectSocket_, receivebuffer, receivebuffersize, 0);
